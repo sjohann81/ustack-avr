@@ -1,5 +1,7 @@
 # uStack-avr - A portable and minimalistic IP stack, ported to the ATMEGA328p
 
+Ported from https://github.com/sjohann81/ustack.
+
 uStack is a quick-and-dirty implementation of most common network protocols of IPv4, suitable for experiments, porting and integration of a IP network stack on embedded devices with limited resources. Currently, uStack supports a low level abstraction of a network card (using Linux TUN/TAP), Serial IP interface, Ethernet, ARP, BOOTP, IP, ICMP and UDP protocols.
 
 ## Configuration
