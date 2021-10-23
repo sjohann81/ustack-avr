@@ -3,16 +3,22 @@
 # USTACK_IP_ADDR		static configuration of IP address
 # USTACK_NETMASK		static configuration of network mask
 # USTACK_GW_ADDR		static configuration of gateway address
+# USTACK_TAP_ADDR		TUN/TAP interface address
+# USTACK_TAP_ROUTE		TUN/TAP interface default route
 
 # configurable section
 USTACK_IP_ADDR =	172.31.69.20
 USTACK_NETMASK =	255.255.255.0
 USTACK_GW_ADDR =	172.31.69.1
+USTACK_TAP_ADDR =	172.31.69.1/24
+USTACK_TAP_ROUTE =	172.31.69.0/24
 
 # compiler flags section
 AFLAGS = 	-DUSTACK_IP_ADDR=\"$(USTACK_IP_ADDR)\" \
 		-DUSTACK_NETMASK=\"$(USTACK_NETMASK)\" \
-		-DUSTACK_GW_ADDR=\"$(USTACK_GW_ADDR)\"
+		-DUSTACK_GW_ADDR=\"$(USTACK_GW_ADDR)\" \
+		-DUSTACK_TAP_ADDR=\"$(USTACK_TAP_ADDR)\" \
+		-DUSTACK_TAP_ROUTE=\"$(USTACK_TAP_ROUTE)\" 
 
 MCU = atmega328p
 CRYSTAL = 16000000
@@ -37,15 +43,35 @@ AVRDUDE_PART=m328p
 #PROGRAMMER = usbasp
 PROGRAMMER = arduino -P $(SERIAL_PROG)
 
-all:
+all: eth_stack
+
+eth_stack:
 	$(CC) $(CFLAGS) -c utils.c -o utils.o
-	$(CC) $(CFLAGS) -c rs232.c -o rs232.o
+	$(CC) $(CFLAGS) -c uart.c -o uart.o
+	$(CC) $(CFLAGS) -c tuntap_if.c -o tuntap_if.o
+	$(CC) $(CFLAGS) -c eth_netif.c -o eth_netif.o
+	$(CC) $(CFLAGS) -c bootp.c -o bootp.o
+	$(CC) $(CFLAGS) -c arp.c -o arp.o
+	$(CC) $(CFLAGS) -c ip.c -o ip.o
+	$(CC) $(CFLAGS) -c icmp.c -o icmp.o
+	$(CC) $(CFLAGS) -c udp.c -o udp.o
+	$(CC) $(CFLAGS) -c main.c -o main.o
+	$(CC) $(CFLAGS) utils.o uart.o tuntap_if.o eth_netif.o bootp.o arp.o ip.o icmp.o udp.o main.o -o code.elf
+	$(OBJCOPY) -R .eeprom -O ihex code.elf code.hex
+	$(OBJDUMP) -d code.elf > code.lst
+	$(OBJDUMP) -h code.elf > code.sec
+	$(SIZE) code.elf
+	gcc -O2 $(AFLAGS) -Wall tuntap_if_host.c -o tuntap_if_host 
+
+slip_stack:
+	$(CC) $(CFLAGS) -c utils.c -o utils.o
+	$(CC) $(CFLAGS) -c uart.c -o uart.o
 	$(CC) $(CFLAGS) -c slip_netif.c -o slip_netif.o
 	$(CC) $(CFLAGS) -c ip.c -o ip.o
 	$(CC) $(CFLAGS) -c icmp.c -o icmp.o
 	$(CC) $(CFLAGS) -c udp.c -o udp.o
 	$(CC) $(CFLAGS) -c main.c -o main.o
-	$(CC) $(CFLAGS) utils.o rs232.o slip_netif.o ip.o icmp.o udp.o main.o -o code.elf
+	$(CC) $(CFLAGS) utils.o uart.o slip_netif.o ip.o icmp.o udp.o main.o -o code.elf
 	$(OBJCOPY) -R .eeprom -O ihex code.elf code.hex
 	$(OBJDUMP) -d code.elf > code.lst
 	$(OBJDUMP) -h code.elf > code.sec
@@ -54,9 +80,18 @@ all:
 flash:
 	avrdude -C $(AVRDUDE_CONFIG) -p $(AVRDUDE_PART) -U flash:w:code.hex -y -c $(PROGRAMMER)
 
+serial_sim:
+	socat -d -d  pty,link=/tmp/ttyS10,raw,echo=0,perm-late=777 pty,link=/tmp/ttyS11,raw,echo=0
+
+eth_up_sim:
+	./tuntap_if_host /tmp/ttyS11
+
 serial:
-	stty ${BAUD} raw cs8 -parenb -crtscts clocal cread ignpar ignbrk -ixon -ixoff -ixany -brkint \
+	stty ${SERIAL_BAUDRATE} raw cs8 -parenb -crtscts clocal cread ignpar ignbrk -ixon -ixoff -ixany -brkint \
 	-icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke -F ${SERIAL_DEV}
+	
+eth_up: serial
+	./tuntap_if_host ${SERIAL_DEV}
 
 slip_up: serial
 	slattach -L -d -p slip -s ${SERIAL_BAUDRATE} ${SERIAL_DEV} &
@@ -92,4 +127,4 @@ parport:
 	modprobe parport_pc
 
 clean:
-	rm -f *.o *.map *.elf *.sec *.lst *.hex *~
+	rm -f *.o *.map *.elf *.sec *.lst *.hex *~ tuntap_if_host

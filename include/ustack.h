@@ -240,15 +240,18 @@ int32_t hexdump(uint8_t *buf, uint32_t size);
 int32_t config(uint8_t addr[4], char *str);
 
 /* layer 1 */
-extern void rs232_init(uint32_t baud);
-extern void rs232_tx(uint8_t data);
-extern uint8_t rs232_rx(void);
+void uart_init(uint32_t baud, uint8_t polled);
+void uart_flush(void);
+uint16_t uart_rxsize(void);
+void uart_tx(uint8_t data);
+uint8_t uart_rx_polled(void);
+uint8_t uart_rx(void);
 
-extern int32_t if_setup();
-extern int32_t if_deinit();
+int32_t if_setup();
+int32_t if_deinit();
 
-extern void en_ll_output(uint8_t *frame, uint16_t size);
-extern int32_t en_ll_input(uint8_t *frame);
+void en_ll_output(uint8_t *frame, uint16_t size);
+int32_t en_ll_input(uint8_t *frame);
 
 /* layer 2 */
 uint16_t netif_send(uint8_t *packet, uint16_t len);

@@ -10,7 +10,7 @@
 #include "include/ustack.h"
 
 uint8_t eth_frame[FRAME_SIZE];
-uint8_t mymac[6];
+uint8_t mymac[6] = {0x0e, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t myip[4];
 uint8_t mynm[4];
 uint8_t mygw[4];
@@ -40,20 +40,19 @@ int main(void)
 	uint16_t len;
 	
 	if_setup();
+	config(mymac + 2, USTACK_IP_ADDR);
 	config(myip, USTACK_IP_ADDR);
 	config(mynm, USTACK_NETMASK);
 	config(mygw, USTACK_GW_ADDR);
 	udp_set_callback(app_udp_handler);
-
+	
 	while (1) {
 		len = netif_recv(packet);
 
-		if (len > 0){
+		if (len > 0) {
 			ip_in(myip, packet, len);
 		}
 	}
-
-	if_deinit();
 	
 	return 0;
 }
