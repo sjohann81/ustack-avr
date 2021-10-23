@@ -88,7 +88,7 @@ int32_t bootp_boot(uint8_t *packet)
 	while (1) {
 		bootp_make_request(frame);
 		udp_out(addr, IPPORT_BOOTPC, IPPORT_BOOTPS, packet, sizeof(struct udp_s) + sizeof(struct bootp_s));
-		sleep(1);
+		_delay_ms(1000);
 		
 		ll_len = en_ll_input(frame);
 
