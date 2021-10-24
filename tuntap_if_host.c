@@ -208,7 +208,6 @@ int main(int32_t argc, char **argv)
 	for (;;) {
 		size = read(tun_fd, eth_frame, FRAME_SIZE);
 		if (size > 0) {
-			// ?? transmitir 'byte clean' (base 16) e usar um byte como demarcador de frame
 			header[0] = 0x55;
 			header[1] = 0x55;
 			*data_sz = htons(size);
