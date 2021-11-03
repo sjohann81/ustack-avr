@@ -41,12 +41,9 @@ int main(void)
 	
 	if_setup();
 	config(mymac + 2, USTACK_IP_ADDR);
-
-	if (!bootp_boot(packet)) {
-		config(myip, USTACK_IP_ADDR);
-		config(mynm, USTACK_NETMASK);
-		config(mygw, USTACK_GW_ADDR);
-	}
+	config(myip, USTACK_IP_ADDR);
+	config(mynm, USTACK_NETMASK);
+	config(mygw, USTACK_GW_ADDR);
 	udp_set_callback(app_udp_handler);
 	
 	while (1) {
