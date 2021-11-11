@@ -19,7 +19,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 
-#define FRAME_SIZE	594
+#define FRAME_SIZE	600
 #define SERIAL_TO	10000
 #define TUN_TO		10000
 
@@ -37,7 +37,8 @@ uint8_t eth_frame[FRAME_SIZE];
 uint8_t mymac[6];
 
 int32_t tty_setup(char *uart){
-	fd = open(uart, O_RDWR);
+//	fd = open(uart, O_RDWR);
+	fd = open(uart, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (fd < 0) {
 		printf("[ERROR]	error opening %s\n", uart);
 		
@@ -192,8 +193,8 @@ int32_t hexdump(uint8_t *buf, uint32_t size)
 
 int main(int32_t argc, char **argv)
 {
-	int32_t size, i, k;
-	uint8_t header[4], data;
+	int32_t size, tsize;//, i, k;
+	uint8_t header[4];
 	uint16_t *data_sz = (uint16_t *)&header[2];
 
 	if (argc != 2) {
@@ -215,7 +216,7 @@ int main(int32_t argc, char **argv)
 			write(fd, eth_frame, size);
 		}
 		
-		if (tty_data_recv()) {
+/*		if (tty_data_recv()) {
 			usleep(50000);
 			i = read(fd, header, 4);
 			if (i == 4) {
@@ -233,5 +234,22 @@ int main(int32_t argc, char **argv)
 				}
 			}
 		}
+		*/
+		usleep(100000);
+		tsize = read(fd, header, sizeof(header));
+		if (tsize > 0) {
+			printf("tsize: %d\n", tsize);
+			size = ntohs(*data_sz);
+			printf("size: %d\n", size);
+			
+			usleep(100000);
+			tsize = read(fd, eth_frame, FRAME_SIZE);
+			
+			if (size > 0 && size <= FRAME_SIZE) {
+				hexdump(eth_frame, size);
+				write(tun_fd, eth_frame, size);
+			}
+		}
+		
 	}
 }

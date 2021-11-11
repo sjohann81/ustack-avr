@@ -38,7 +38,7 @@ int main(void)
 {
 	uint8_t *packet = eth_frame + sizeof(struct eth_s);
 	uint16_t len;
-	
+
 	if_setup();
 	config(mymac + 2, USTACK_IP_ADDR);
 	config(myip, USTACK_IP_ADDR);
@@ -46,6 +46,7 @@ int main(void)
 	config(mygw, USTACK_GW_ADDR);
 	udp_set_callback(app_udp_handler);
 	
+	/* application loop */
 	while (1) {
 		len = netif_recv(packet);
 

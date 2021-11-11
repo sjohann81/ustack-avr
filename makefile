@@ -61,7 +61,7 @@ eth_stack:
 	$(OBJDUMP) -d code.elf > code.lst
 	$(OBJDUMP) -h code.elf > code.sec
 	$(SIZE) code.elf
-	gcc -O2 $(AFLAGS) -Wall tuntap_if_host.c -o tuntap_if_host 
+	gcc $(AFLAGS) -Wall tuntap_if_host.c -o tuntap_if_host 
 
 slip_stack:
 	$(CC) $(CFLAGS) -c utils.c -o utils.o
