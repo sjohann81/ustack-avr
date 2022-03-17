@@ -83,7 +83,11 @@ uint8_t uart_rx(void)
 	return data;
 }
 
+#if MCU_TYPE == 1
 ISR(USART_RX_vect)
+#elif MCU_TYPE == 2
+ISR(USART0_RX_vect)
+#endif
 {
 	uint16_t tail;
 

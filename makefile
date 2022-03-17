@@ -21,7 +21,14 @@ AFLAGS = 	-DUSTACK_IP_ADDR=\"$(USTACK_IP_ADDR)\" \
 		-DUSTACK_TAP_ROUTE=\"$(USTACK_TAP_ROUTE)\" 
 
 MCU = atmega328p
+#MCU = atmega2560
 CRYSTAL = 16000000
+
+ifeq ('$(MCU)', 'atmega328p')
+	MCU_TYPE = 1
+else ifeq ('$(MCU)', 'atmega2560')
+	MCU_TYPE = 2
+endif
 
 SERIAL_DEV = /dev/ttyACM0
 SERIAL_PROG = /dev/ttyACM0
@@ -32,7 +39,7 @@ OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
 
-CFLAGS = $(AFLAGS) -g -mmcu=$(MCU) -Wall -Os -fno-inline-small-functions -fno-split-wide-types -D F_CPU=$(CRYSTAL) -D USART_BAUD=$(SERIAL_BAUDRATE)
+CFLAGS = $(AFLAGS) -g -mmcu=$(MCU) -Wall -Os -fno-inline-small-functions -fno-split-wide-types -D MCU_TYPE=$(MCU_TYPE) -D F_CPU=$(CRYSTAL) -D USART_BAUD=$(SERIAL_BAUDRATE)
 
 AVRDUDE_CONFIG=/usr/local/avr/gcc/etc/avrdude.conf
 AVRDUDE_PART=m328p

@@ -1,4 +1,4 @@
-# uStack-avr - A portable and minimalistic IP stack, ported to the ATMEGA328p
+# uStack-avr - A portable and minimalistic IP stack, ported to the ATMEGA328p / ATMEGA2560
 
 Ported from https://github.com/sjohann81/ustack.
 
@@ -6,7 +6,7 @@ uStack is a quick-and-dirty implementation of most common network protocols of I
 
 ## Configuration (TUN/TAP interface)
 
-Just type *make eth_stack* or *make* to build the binary. To run it on a Arduino UNO, connect the board via USB and type *make flash*. After the programming process, connect to the board using the serial port created by the Arduino with a TUN/TAP tunnel using *sudo make eth_up* then try the demo.
+Just type *make eth_stack* or *make* to build the binary. To run it on a Arduino UNO or MEGA, change the MCU type in the Makefile, connect the board via USB and type *make flash*. After the programming process, connect to the board using the serial port created by the Arduino with a TUN/TAP tunnel using *sudo make eth_up* then try the demo.
 
 Before reprogramming the board, be sure to bring the TUN/TAP tunnel down using Ctrl+c on the terminal running it. This process is needed because the same serial port is used for both programming and communicating with the host. If you have a different board, or arranged a different configuration on a breadboard, you may not need this.
 
