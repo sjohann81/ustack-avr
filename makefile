@@ -22,14 +22,18 @@ AFLAGS = 	-DUSTACK_IP_ADDR=\"$(USTACK_IP_ADDR)\" \
 
 MCU = atmega328p
 #MCU = atmega2560
-CRYSTAL = 16000000
 
 ifeq ('$(MCU)', 'atmega328p')
 	MCU_TYPE = 1
+	AVRDUDE_PART=m328p
+	PROGRAMMER = arduino -P $(SERIAL_PROG)
 else ifeq ('$(MCU)', 'atmega2560')
 	MCU_TYPE = 2
+	AVRDUDE_PART=m2560
+	PROGRAMMER = wiring -P $(SERIAL_PROG) -D
 endif
 
+CRYSTAL = 16000000
 SERIAL_DEV = /dev/ttyACM0
 SERIAL_PROG = /dev/ttyACM0
 SERIAL_BAUDRATE=57600
@@ -42,13 +46,11 @@ SIZE = avr-size
 CFLAGS = $(AFLAGS) -g -mmcu=$(MCU) -Wall -Os -fno-inline-small-functions -fno-split-wide-types -D MCU_TYPE=$(MCU_TYPE) -D F_CPU=$(CRYSTAL) -D USART_BAUD=$(SERIAL_BAUDRATE)
 
 AVRDUDE_CONFIG=/usr/local/avr/gcc/etc/avrdude.conf
-AVRDUDE_PART=m328p
 
 #PROGRAMMER = bsd
 #PROGRAMMER = usbtiny
 #PROGRAMMER = dasa -P $(SERIAL_PROG)
 #PROGRAMMER = usbasp
-PROGRAMMER = arduino -P $(SERIAL_PROG)
 
 all: eth_stack
 
