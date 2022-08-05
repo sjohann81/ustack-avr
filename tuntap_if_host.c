@@ -29,50 +29,38 @@ static char *dev;
 char *tapaddr = USTACK_TAP_ADDR;
 char *taproute = USTACK_TAP_ROUTE;
 
-FILE *tin, *tout;
-FILE *flog, *fdb;
 int fd;
 
 uint8_t eth_frame[FRAME_SIZE];
 uint8_t mymac[6];
 
 int32_t tty_setup(char *uart){
-//	fd = open(uart, O_RDWR);
-	fd = open(uart, O_RDWR | O_NOCTTY | O_NDELAY);
+	fd = open(uart, O_RDWR | O_NOCTTY);
 	if (fd < 0) {
 		printf("[ERROR]	error opening %s\n", uart);
 		
 		return -1;
 	}
-	tout = fopen(uart, "w");
-	tin = fopen(uart, "r");
-	if (tout < 0) {
-		printf("[ERROR]	error opening for reading/writing%s\n", uart);
-		
-		return -1;
-	} else {
-		return 0;
-	}
+	
+	return 0;
 }
 
 int32_t tty_data_recv(void){
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(fd, &fds);
-	struct timeval timeout = { 0, SERIAL_TO };
-	return select(fd+1, &fds, NULL, NULL, &timeout);
-	/* ret == 0 means timeout, ret == 1 means descriptor is ready for reading,
-		ret == -1 means error (check errno) */
+	struct timeval timeout = {0, SERIAL_TO};
+	/* ret == 0 timeout, ret == 1 descriptor is ready for reading, ret == -1 error */
+	return select(fd + 1, &fds, NULL, NULL, &timeout);
 }
 
 int32_t tun_data_recv(void){
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(tun_fd, &fds);
-	struct timeval timeout = { 0, TUN_TO };
-	return select(tun_fd+1, &fds, NULL, NULL, &timeout);
-	/* ret == 0 means timeout, ret == 1 means descriptor is ready for reading,
-		ret == -1 means error (check errno) */
+	struct timeval timeout = {0, TUN_TO};
+	/* ret == 0 timeout, ret == 1 descriptor is ready for reading, ret == -1 error */
+	return select(tun_fd + 1, &fds, NULL, NULL, &timeout);
 }
 
 static int32_t set_if_route(char *dev, char *cidr)
@@ -114,7 +102,7 @@ static int32_t tun_alloc(char *dev)
 	int32_t fd, err;
 	struct ifreq s;
 
-	if ((fd = open("/dev/net/tun", O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
+	if ((fd = open("/dev/net/tun", O_RDWR | O_NOCTTY)) < 0) {
 		printf("[FATAL] Cannot open TUN/TAP dev\nMake sure one exists with '$ mknod /dev/net/tun c 10 200'\n");
 		exit(-1);
 	}
@@ -122,7 +110,7 @@ static int32_t tun_alloc(char *dev)
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
 	if (*dev)
-		strncpy(ifr.ifr_name, dev, IFNAMSIZ-1);
+		strncpy(ifr.ifr_name, dev, IFNAMSIZ - 1);
 
 	if ((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0) {
 		printf("[FATAL] Could not ioctl tun");
@@ -193,9 +181,9 @@ int32_t hexdump(uint8_t *buf, uint32_t size)
 
 int main(int32_t argc, char **argv)
 {
-	int32_t size, tsize;//, i, k;
-	uint8_t header[4];
-	uint16_t *data_sz = (uint16_t *)&header[2];
+	int32_t size, i;
+	uint8_t data;
+	uint8_t del = 0x7e, esc = 0x7d;
 
 	if (argc != 2) {
 		printf("Usage: tuntap_if_host </dev/ttyXX>\n");
@@ -207,49 +195,42 @@ int main(int32_t argc, char **argv)
 	if_setup();
 	
 	for (;;) {
-		size = read(tun_fd, eth_frame, FRAME_SIZE);
-		if (size > 0) {
-			header[0] = 0x55;
-			header[1] = 0x55;
-			*data_sz = htons(size);
-			write(fd, header, 4);
-			write(fd, eth_frame, size);
-		}
-		
-/*		if (tty_data_recv()) {
-			usleep(50000);
-			i = read(fd, header, 4);
-			if (i == 4) {
-				size = ntohs(*data_sz);
-				printf("size: %d\n", size);
-				
-				for (k = 0; k < size && k < FRAME_SIZE; k++) {
-					read(fd, &data, 1);
-					eth_frame[k] = data;
+		if (tun_data_recv()) {
+			size = read(tun_fd, eth_frame, FRAME_SIZE);
+			
+			if (size > 0) {
+				write(fd, &del, 1);
+				for (i = 0; i < size; i++) {
+					if (eth_frame[i] == 0x7e || eth_frame[i] == 0x7d) {
+						write(fd, &esc, 1);
+						data = eth_frame[i] ^ 0x20;
+					} else {
+						data = eth_frame[i];
+					}
+					write(fd, &data, 1);
 				}
+				write(fd, &del, 1);
+			}
+		}
 
-				if (size > 0 && size <= FRAME_SIZE) {
-					hexdump(eth_frame, size);
-					write(tun_fd, eth_frame, size);
+		if (tty_data_recv()) {
+			read(fd, &data, 1);
+			
+			if (data == 0x7e) {
+				for (i = 0; i < FRAME_SIZE; i++) {
+					read(fd, &data, 1);
+					if (data == 0x7e)
+						break;
+					if (data == 0x7d) {
+						read(fd, &data, 1);
+						data ^= 0x20;
+					}
+					eth_frame[i] = data;
 				}
 			}
-		}
-		*/
-		usleep(100000);
-		tsize = read(fd, header, sizeof(header));
-		if (tsize > 0) {
-			printf("tsize: %d\n", tsize);
-			size = ntohs(*data_sz);
-			printf("size: %d\n", size);
-			
-			usleep(100000);
-			tsize = read(fd, eth_frame, FRAME_SIZE);
-			
-			if (size > 0 && size <= FRAME_SIZE) {
-				hexdump(eth_frame, size);
-				write(tun_fd, eth_frame, size);
-			}
-		}
-		
+			printf("size: %d\n", i);
+			hexdump(eth_frame, i);
+			write(tun_fd, eth_frame, i);
+		}	
 	}
 }

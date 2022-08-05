@@ -20,8 +20,8 @@ AFLAGS = 	-DUSTACK_IP_ADDR=\"$(USTACK_IP_ADDR)\" \
 		-DUSTACK_TAP_ADDR=\"$(USTACK_TAP_ADDR)\" \
 		-DUSTACK_TAP_ROUTE=\"$(USTACK_TAP_ROUTE)\" 
 
-MCU = atmega328p
-#MCU = atmega2560
+#MCU = atmega328p
+MCU = atmega2560
 
 ifeq ('$(MCU)', 'atmega328p')
 	MCU_TYPE = 1

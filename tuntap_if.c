@@ -17,38 +17,49 @@ int32_t if_setup()
 void en_ll_output(uint8_t *frame, uint16_t size)
 {
 	uint16_t i;
-	uint8_t data_sz[2];
-	uint16_t *size_p = (uint16_t *)&data_sz;
-	
-	*size_p = htons(size);
-	uart_tx(0x55);
-	uart_tx(0x55);
-	uart_tx(data_sz[0]);
-	uart_tx(data_sz[1]);
-	for (i = 0; i < size && i < FRAME_SIZE; i++)
-		uart_tx(frame[i]);
+
+	uart_tx(0x7e);
+	for (i = 0; i < size && i < FRAME_SIZE; i++) {
+		if (frame[i] == 0x7e || frame[i] == 0x7d) {
+			uart_tx(0x7d);
+			uart_tx(frame[i] ^ 0x20);
+		} else {
+			uart_tx(frame[i]);
+		}
+	}
+	uart_tx(0x7e);
 }
 
 int32_t en_ll_input(uint8_t *frame)
 {
-	uint16_t i, size;
-	uint8_t data_sz[2];
-	uint16_t *size_p = (uint16_t *)&data_sz;
+	uint16_t i = 0;
+	uint8_t data;
 
 	if (uart_rxsize() == 0)
 		return 0;
 
-	if (uart_rx() != 0x55)
-		return -1;
-	if (uart_rx() != 0x55)
-		return -1;
-	data_sz[0] = uart_rx();
-	data_sz[1] = uart_rx();
-	
-	size = ntohs(*size_p);
-	
-	for (i = 0; i < size && i < FRAME_SIZE; i++)
-		frame[i] = uart_rx();
+	if (uart_rx() != 0x7e) {
+		do {
+			data = uart_rx();
+		} while (uart_rxsize() > 0 && data != 0x7e);
 
-	return size;
+		if (uart_rxsize() == 0)
+			return 0;
+	}
+
+	for (i = 0; i < FRAME_SIZE; i++) {
+		data = uart_rx();
+
+		if (data == 0x7e)
+			break;
+
+		if (data == 0x7d) {
+			data = uart_rx();
+			data ^= 0x20;
+		}
+
+		frame[i] = data;
+	}
+
+	return i;
 }
