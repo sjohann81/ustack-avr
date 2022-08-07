@@ -30,6 +30,7 @@ void en_ll_output(uint8_t *frame, uint16_t size)
 	uart_tx(0x7e);
 }
 
+
 int32_t en_ll_input(uint8_t *frame)
 {
 	uint16_t i = 0;
@@ -38,22 +39,34 @@ int32_t en_ll_input(uint8_t *frame)
 	if (uart_rxsize() == 0)
 		return 0;
 
-	if (uart_rx() != 0x7e) {
-		do {
+	data = uart_rx();
+	if (data != 0x7e) {
+		while (uart_rxsize() > 0 && data != 0x7e)
 			data = uart_rx();
-		} while (uart_rxsize() > 0 && data != 0x7e);
 
 		if (uart_rxsize() == 0)
 			return 0;
 	}
 
 	for (i = 0; i < FRAME_SIZE; i++) {
+		if (uart_rxsize() == 0) {
+			_delay_ms(10);
+			if (uart_rxsize() == 0)
+				return 0;
+		}
+		
 		data = uart_rx();
 
 		if (data == 0x7e)
 			break;
 
 		if (data == 0x7d) {
+			if (uart_rxsize() == 0) {
+				_delay_ms(10);
+				if (uart_rxsize() == 0)
+					return 0;
+			}
+			
 			data = uart_rx();
 			data ^= 0x20;
 		}

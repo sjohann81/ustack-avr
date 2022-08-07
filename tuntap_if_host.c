@@ -20,8 +20,8 @@
 #include <fcntl.h>
 
 #define FRAME_SIZE	600
-#define SERIAL_TO	10000
-#define TUN_TO		10000
+#define SERIAL_TO	50000
+#define TUN_TO		50000
 
 static int32_t tun_fd;
 static char *dev;
@@ -195,7 +195,7 @@ int main(int32_t argc, char **argv)
 	if_setup();
 	
 	for (;;) {
-		if (tun_data_recv()) {
+		if (tun_data_recv() == 1) {
 			size = read(tun_fd, eth_frame, FRAME_SIZE);
 			
 			if (size > 0) {
@@ -213,16 +213,22 @@ int main(int32_t argc, char **argv)
 			}
 		}
 
-		if (tty_data_recv()) {
+		if (tty_data_recv() == 1) {
 			read(fd, &data, 1);
 			
 			if (data == 0x7e) {
 				for (i = 0; i < FRAME_SIZE; i++) {
-					read(fd, &data, 1);
+					if (tty_data_recv() == 1)
+						read(fd, &data, 1);
+					else
+						break;
 					if (data == 0x7e)
 						break;
 					if (data == 0x7d) {
-						read(fd, &data, 1);
+						if (tty_data_recv() == 1)
+							read(fd, &data, 1);
+						else
+							break;
 						data ^= 0x20;
 					}
 					eth_frame[i] = data;
