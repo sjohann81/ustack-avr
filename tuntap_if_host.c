@@ -216,24 +216,39 @@ int main(int32_t argc, char **argv)
 		if (tty_data_recv() == 1) {
 			read(fd, &data, 1);
 			
-			if (data == 0x7e) {
-				for (i = 0; i < FRAME_SIZE; i++) {
-					if (tty_data_recv() == 1)
-						read(fd, &data, 1);
-					else
-						break;
-					if (data == 0x7e)
-						break;
-					if (data == 0x7d) {
-						if (tty_data_recv() == 1)
-							read(fd, &data, 1);
-						else
-							break;
-						data ^= 0x20;
-					}
-					eth_frame[i] = data;
-				}
+			if (data != 0x7e) {
+				while (tty_data_recv() == 1 && data != 0x7e)
+					read(fd, &data, 1);
+
+				if (tty_data_recv() != 1)
+					continue;
 			}
+			
+			for (i = 0; i < FRAME_SIZE; i++) {
+				if (tty_data_recv() != 1) {
+					usleep(10000);
+					if (tty_data_recv() != 1)
+						break;
+				}
+				
+				
+				read(fd, &data, 1);
+
+				if (data == 0x7e)
+					break;
+				if (data == 0x7d) {
+					if (tty_data_recv() != 1) {
+						usleep(10000);
+						if (tty_data_recv() != 1)
+							break;
+					}
+					
+					read(fd, &data, 1);
+					data ^= 0x20;
+				}
+				eth_frame[i] = data;
+			}
+
 			printf("size: %d\n", i);
 			hexdump(eth_frame, i);
 			write(tun_fd, eth_frame, i);
