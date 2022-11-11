@@ -95,6 +95,13 @@ serial_sim:
 eth_up_sim:
 	./tuntap_if_host /tmp/ttyS11
 
+slip_up_sim:
+	slattach -L -d -p slip -s 57600 /tmp/ttyS11 &
+	sleep 2
+	ifconfig sl0 ${USTACK_GW_ADDR}
+	ifconfig sl0 dstaddr ${USTACK_IP_ADDR}
+	ifconfig sl0 mtu 576
+
 serial:
 	stty ${SERIAL_BAUDRATE} raw cs8 -parenb -crtscts clocal cread ignpar ignbrk -ixon -ixoff -ixany -brkint \
 	-icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke -F ${SERIAL_DEV}
@@ -108,7 +115,7 @@ slip_up: serial
 	ifconfig sl0 ${USTACK_GW_ADDR}
 	ifconfig sl0 dstaddr ${USTACK_IP_ADDR}
 	ifconfig sl0 mtu 576
-
+	
 slip_down:
 	killall slattach
 
