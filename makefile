@@ -89,13 +89,14 @@ slip_stack:
 flash:
 	avrdude -C $(AVRDUDE_CONFIG) -p $(AVRDUDE_PART) -U flash:w:code.hex -y -c $(PROGRAMMER)
 
-serial_sim:
-	socat -d -d  pty,link=/tmp/ttyS10,raw,echo=0,perm-late=777 pty,link=/tmp/ttyS11,raw,echo=0
-
 eth_up_sim:
+	socat -d -d  pty,link=/tmp/ttyS10,rawer,echo=0,b57600,perm-late=777 pty,link=/tmp/ttyS11,rawer,echo=0,b57600 &
+	sleep 1
 	./tuntap_if_host /tmp/ttyS11
 
 slip_up_sim:
+	socat -d -d  pty,link=/tmp/ttyS10,rawer,echo=0,b57600,perm-late=777 pty,link=/tmp/ttyS11,rawer,echo=0,b57600 &
+	sleep 1
 	slattach -L -d -p slip -s 57600 /tmp/ttyS11 &
 	sleep 2
 	ifconfig sl0 ${USTACK_GW_ADDR}
