@@ -210,6 +210,9 @@ int main(int32_t argc, char **argv)
 					write(fd, &data, 1);
 				}
 				write(fd, &del, 1);
+				
+				printf("tun data size: %d\n", size);
+//				hexdump(eth_frame, size);
 			}
 		}
 
@@ -249,7 +252,7 @@ int main(int32_t argc, char **argv)
 				eth_frame[i] = data;
 			}
 
-			printf("size: %d\n", i);
+			printf("tty data size: %d\n", i);
 			hexdump(eth_frame, i);
 			write(tun_fd, eth_frame, i);
 		}	
