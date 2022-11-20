@@ -46,6 +46,8 @@ int main(void)
 	config(mygw, USTACK_GW_ADDR);
 	udp_set_callback(app_udp_handler);
 	
+	sei();
+	
 	/* application loop */
 	while (1) {
 		len = netif_recv(packet);
