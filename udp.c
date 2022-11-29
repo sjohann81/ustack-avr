@@ -43,9 +43,10 @@ int32_t udp_out(uint8_t dst_addr[4], uint16_t src_port, uint16_t dst_port, uint8
 	udp->udp.dst_port = htons(dst_port);
 	udp->udp.len = htons(len);
 	udp->udp.chksum = htons(0);
+	memcpy(&udp->ip.src_addr, myip, 4);
+	memcpy(&udp->ip.dst_addr, dst_addr, 4);
 
-//	chksum = udpchksum(packet, len);
-	chksum = 0;
+	chksum = udpchksum(packet, len);
 	udp->udp.chksum = htons(chksum);
 	
 	val = ip_out(dst_addr, IP_PROTO_UDP, packet, len + sizeof(struct ip_s));
