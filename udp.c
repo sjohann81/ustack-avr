@@ -8,7 +8,6 @@
 
 static int32_t (*udp_callback)(uint8_t *packet);
 
-/* FIXME: udpchksum() is buggy! */
 static uint16_t udpchksum(uint8_t *packet, uint16_t len)
 {
 	uint32_t sum = 0;
